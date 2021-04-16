@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "52222496634",
+    "project_id": "cmrewardapp",
+    "storage_bucket": "cmrewardapp.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:52222496634:android:1f3759797771fb721190c3",
+        "android_client_info": {
+          "package_name": "com.manthanvanani.cmreward"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "52222496634-lcaaubf22atia6ff1r560fdn1kq3faln.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA5Q3jaVZAofeBlu2HK1_vS4pZwzuGqtC4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "52222496634-lcaaubf22atia6ff1r560fdn1kq3faln.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
