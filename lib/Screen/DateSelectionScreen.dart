@@ -5,6 +5,7 @@ import 'package:facebook_audience_network/ad/ad_banner.dart';
 import 'package:facebook_audience_network/ad/ad_interstitial.dart';
 import 'package:flutter/material.dart';
 import 'package:page_transition/page_transition.dart';
+import 'package:spin_master/Model/SpinLink.dart';
 import 'package:spin_master/Screen/SelectedDateScreen.dart';
 import 'package:spin_master/Utills/Constants.dart';
 import 'package:spin_master/Utills/UIUtills.dart';
@@ -12,8 +13,10 @@ import 'package:spin_master/Model/LinkModel.dart';
 import 'package:spin_master/Database/Database.dart';
 
 class DateSelectionScreen extends StatefulWidget{
-  DateSelectionScreen({Key key,this.type}) : super(key: key);
+  final List<SpinLink> spinLinkList;
   final int type;
+
+  DateSelectionScreen({Key key,this.type,this.spinLinkList}) : super(key: key);
   _DateSelectionScreen createState() =>_DateSelectionScreen();
 }
 

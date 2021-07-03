@@ -11,8 +11,12 @@ import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:spin_master/Api/ApiCall.dart';
 import 'package:spin_master/Database/Database.dart';
+import 'package:spin_master/Model/CurrentApp.dart';
 import 'package:spin_master/Model/LinkModel.dart';
+import 'package:spin_master/Model/SpinLink.dart';
+import 'package:spin_master/Utills/ConstantUtils.dart';
 import 'package:spin_master/Utills/Constants.dart';
 import 'package:spin_master/Utills/UIUtills.dart';
 import 'package:mailto/mailto.dart';
@@ -32,7 +36,9 @@ class _HomeScreen extends State<HomeScreen>{
   DatabaseHelper databaseHelper;
   List<String> list = List();
   List<String> subList = List();
-  List<LinkModel> linkList = List();
+  // List<LinkModel> linkList = List();
+  List<SpinLink> spinLinkList = List();
+
   bool showLoader = false;
   final options = LiveOptions(
     delay: Duration(seconds: 0),
@@ -48,13 +54,117 @@ class _HomeScreen extends State<HomeScreen>{
   void initState() {
     // TODO: implement initState
     super.initState();
-    idDataUpdate().then((value){
-      if(value){
-        getData();
-      }
-    });
+    // idDataUpdate().then((value){
+    //   if(value){
+    //     getData();
+    //   }
+    // });
+    getSpinLinkData();
     initialize();
   }
+
+  void getSpinLinkData() async {
+    bool internet = await ConstantUtils.checkInternet();
+    if (internet) {
+      ConstantUtils.showLoader();
+      try {
+        final response = await ApiCall.getSpinData();
+        getCurrentApp();
+        setState(() {
+          spinLinkList = response;
+        });
+        ConstantUtils.hideLoader();
+      } catch (e) {
+        getCurrentApp();
+        setState(() {
+          spinLinkList = List();
+        });
+        ConstantUtils.hideLoader();
+      }
+    } else {
+    }
+  }
+
+  void getCurrentApp() async {
+    bool internet = await ConstantUtils.checkInternet();
+    if (internet) {
+      try {
+        CurrentApp response = await ApiCall.getCurrentApp();
+        if(response != null){
+          showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (BuildContext context) {
+                return Dialog(
+                  insetAnimationCurve: Curves.fastOutSlowIn,
+                  insetAnimationDuration: Duration(milliseconds: 100),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.all(
+                      Radius.circular(10.0),
+                    ), ),
+                  child: Center(
+                    widthFactor: 2.0,
+                    heightFactor: 1.0,
+                    child: Container(
+                        width: MediaQuery.of(context).size.width - 50,
+                        height: MediaQuery.of(context).size.height/3.5,
+                        color: Colors.white,
+                        child: Center(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: <Widget>[
+
+                              Container(
+                                padding: EdgeInsets.only(bottom: 30.0),
+                                child: Text('Redirect App!!!',style: TextStyle(color: Constants.main_color,fontWeight: FontWeight.bold,fontSize: 25.0),
+                                ),
+                              ),
+                              Container(
+                                alignment: Alignment.topCenter,
+                                margin: EdgeInsets.only(bottom: 30.0),
+                                child: Text('Please redirect our another app and installed it.',style: TextStyle(fontSize: 20.0,color: Constants.main_color),),
+                              ),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: <Widget>[
+
+                                  Expanded(
+                                    child: RaisedButton(
+                                      padding: EdgeInsets.only(top: 10,bottom: 10),
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(5.0)),
+                                      onPressed: () async {
+                                        ConstantUtils.appRedirect(response.packageName);
+                                      },
+                                      color: Constants.main_color,
+                                      textColor: Colors.white,
+                                      child: Text("Open",style: TextStyle(fontSize: 15,color: Colors.white,fontWeight: FontWeight.w400,fontFamily: 'Poppins'),),
+                                    ),
+                                  ),
+
+                                  SizedBox(width: 10,),
+
+                                ],
+                              ),
+                            ],
+                          ),)
+
+                    ),
+                  ),
+                );
+              });
+        }
+      } catch (e) {
+
+      }
+    }
+  }
+  showOpenDialog(BuildContext context) {
+
+  }
+
+
   @override
   Widget build(BuildContext context) {
     UIUtills().updateScreenDimension(width: MediaQuery.of(context).size.width, height: MediaQuery.of(context).size.height);
@@ -295,64 +405,64 @@ class _HomeScreen extends State<HomeScreen>{
 
 
   }
-  void getData() {
-    setState(() {
-      showLoader = true;
-    });
-    try{
-      firestore
-          .collection("reward_link")
-          .get()
-          .then((QuerySnapshot snapshot) {
-        linkList = List();
-        snapshot.docs.forEach((f) => linkList.add(LinkModel.fromJson(f.data())));
-        print(linkList.length);
-        print(linkList[0].linkList[1].coin);
-        storeDataLocalStorage(linkList);
-        storeCurrentDate();
-        setState(() {
-          showLoader = false;
-        });
-      });
-    }catch(e){
-      setState(() {
-        showLoader = false;
-      });
-    }
-
-  }
-
-  storeDataLocalStorage(List<LinkModel> list) async {
-    databaseHelper = DatabaseHelper.instance;
-    databaseHelper.clean();
-    for(int i=0;i<list.length;i++){
-      await databaseHelper.insertLinkModel(list[i]);
-    }
-    print("true");
-  }
-
-  storeCurrentDate() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    var now = new DateTime.now();
-    var formatter = new DateFormat('dd MMM yyyy');
-    String formattedDate = formatter.format(now);
-    await prefs.setString(Constants.last_update_date, formattedDate);
-  }
-
-  Future<bool> idDataUpdate() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String storedData = prefs.getString(Constants.last_update_date);
-    var now = new DateTime.now();
-    var formatter = new DateFormat('dd MMM yyyy');
-    String currentDate = formatter.format(now);
-    print(storedData);
-    print(currentDate);
-    if(storedData != currentDate){
-      return true;
-    }else{
-      return false;
-    }
-  }
+  // void getData() {
+  //   setState(() {
+  //     showLoader = true;
+  //   });
+  //   try{
+  //     firestore
+  //         .collection("reward_link")
+  //         .get()
+  //         .then((QuerySnapshot snapshot) {
+  //       linkList = List();
+  //       snapshot.docs.forEach((f) => linkList.add(LinkModel.fromJson(f.data())));
+  //       print(linkList.length);
+  //       print(linkList[0].linkList[1].coin);
+  //       storeDataLocalStorage(linkList);
+  //       storeCurrentDate();
+  //       setState(() {
+  //         showLoader = false;
+  //       });
+  //     });
+  //   }catch(e){
+  //     setState(() {
+  //       showLoader = false;
+  //     });
+  //   }
+  //
+  // }
+  //
+  // storeDataLocalStorage(List<LinkModel> list) async {
+  //   databaseHelper = DatabaseHelper.instance;
+  //   databaseHelper.clean();
+  //   for(int i=0;i<list.length;i++){
+  //     await databaseHelper.insertLinkModel(list[i]);
+  //   }
+  //   print("true");
+  // }
+  //
+  // storeCurrentDate() async {
+  //   SharedPreferences prefs = await SharedPreferences.getInstance();
+  //   var now = new DateTime.now();
+  //   var formatter = new DateFormat('dd MMM yyyy');
+  //   String formattedDate = formatter.format(now);
+  //   await prefs.setString(Constants.last_update_date, formattedDate);
+  // }
+  //
+  // Future<bool> idDataUpdate() async {
+  //   SharedPreferences prefs = await SharedPreferences.getInstance();
+  //   String storedData = prefs.getString(Constants.last_update_date);
+  //   var now = new DateTime.now();
+  //   var formatter = new DateFormat('dd MMM yyyy');
+  //   String currentDate = formatter.format(now);
+  //   print(storedData);
+  //   print(currentDate);
+  //   if(storedData != currentDate){
+  //     return true;
+  //   }else{
+  //     return false;
+  //   }
+  // }
 
   appReview(){
     StoreRedirect.redirect(androidAppId: Constants.android_app,
